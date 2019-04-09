@@ -4,7 +4,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
@@ -13,7 +12,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,7 +21,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class LoggingHttpServletRequestWrapper extends HttpServletRequestWrapper {
 
@@ -110,15 +107,21 @@ public class LoggingHttpServletRequestWrapper extends HttpServletRequestWrapper 
 			String normalizedContent = StringUtils.normalizeSpace(new String(content, requestEncoding != null ? requestEncoding : StandardCharsets.UTF_8.name()));
 			return StringUtils.isBlank(normalizedContent) ? "[EMPTY]" : normalizedContent;
 		} catch (IOException e) {
-			throw new UncheckedIOException(e);
+			throw new RuntimeException(e);
 		}
 	}
 
 	private byte[] getContentFromParameterMap(Map<String, String[]> parameterMap) {
-		return parameterMap.entrySet().stream().map(e -> {
-			String[] value = e.getValue();
-			return e.getKey() + "=" + (value.length == 1 ? value[0] : Arrays.toString(value));
-		}).collect(Collectors.joining("&")).getBytes();
+		String formData = "";
+		for (Entry<String, String[]> parameterEntry :  getParameterMap().entrySet()) {
+			String[] value = parameterEntry.getValue();
+			formData += parameterEntry.getKey() + "=" + (value.length == 1 ? value[0] : Arrays.toString(value)) + "&";
+		}
+
+		if (!formData.isEmpty())
+			formData = formData.substring(0, formData.length()-1);
+
+		return formData.getBytes();
 	}
 
 	public Map<String, String> getHeaders() {
@@ -134,10 +137,13 @@ public class LoggingHttpServletRequestWrapper extends HttpServletRequestWrapper 
 	}
 
 	public Map<String, String> getParameters() {
-		return getParameterMap().entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> {
-			String[] values = e.getValue();
-			return values.length > 0 ? values[0] : "[EMPTY]";
-		}));
+		Map<String, String> parameters = new HashMap<>();
+		for (Entry<String, String[]> parameterEntry :  getParameterMap().entrySet()) {
+			String[] values = parameterEntry.getValue();
+			String value = values.length > 0 ? values[0] : "[EMPTY]";
+			parameters.put(parameterEntry.getKey(), value);
+		}
+		return parameters;
 	}
 
 	public boolean isFormPost() {
@@ -151,7 +157,7 @@ public class LoggingHttpServletRequestWrapper extends HttpServletRequestWrapper 
 		private final Iterator<String> iterator;
 
 		private ParamNameEnumeration(Set<String> values) {
-			this.iterator = values != null ? values.iterator() : Collections.emptyIterator();
+			this.iterator = values != null ? values.iterator() :  Collections.<String>emptyIterator();
 		}
 
 		@Override
@@ -171,21 +177,6 @@ public class LoggingHttpServletRequestWrapper extends HttpServletRequestWrapper 
 
 		private LoggingServletInputStream(byte[] content) {
 			this.is = new ByteArrayInputStream(content);
-		}
-
-		@Override
-		public boolean isFinished() {
-			return true;
-		}
-
-		@Override
-		public boolean isReady() {
-			return true;
-		}
-
-		@Override
-		public void setReadListener(ReadListener readListener) {
-			// not used
 		}
 
 		@Override

@@ -14,12 +14,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.context.support.HttpRequestHandlerServlet;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.*;
 import java.io.IOException;
 
 import static org.mockito.Mockito.verify;
@@ -28,7 +23,7 @@ import static org.slf4j.MarkerFactory.getMarker;
 
 @SuppressWarnings({"squid:S00100", "squid:S00112", "squid:S3457"})
 @ExtendWith({MockitoExtension.class})
-public class LoggingFilterTest {
+public class LoggingFilterPostTest {
 
 	@InjectMocks
 	private LoggingFilter loggingFilter = new LoggingFilter();
@@ -45,11 +40,11 @@ public class LoggingFilterTest {
 	@BeforeEach
 	public void setUp() {
 
-		httpServletRequest = new MockHttpServletRequest("GET", "http://localhost:8080/test");
+		httpServletRequest = new MockHttpServletRequest("POST", "http://localhost:8080/test");
 		httpServletRequest.addHeader("Accept", "application/json");
-		httpServletRequest.addParameter("param1", "1000");
-		httpServletRequest.setContent("Test request body".getBytes());
-		httpServletRequest.setContentType(MediaType.TEXT_PLAIN_VALUE);
+		httpServletRequest.addParameter("field1", "1000");
+		httpServletRequest.addParameter("field2", "2000");
+		httpServletRequest.setContentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE);
 
 		httpServletResponse = new MockHttpServletResponse();
 		httpServletResponse.setContentType(MediaType.TEXT_PLAIN_VALUE);
@@ -66,7 +61,7 @@ public class LoggingFilterTest {
 		loggingFilter.doFilter(httpServletRequest, httpServletResponse, filterChain);
 
 		verify(logger).isDebugEnabled();
-		verify(logger).debug(getMarker("REQUEST"), "REQUEST: {\"sender\":\"127.0.0.1\",\"method\":\"GET\",\"path\":\"http://localhost:8080/test\",\"params\":{\"param1\":\"1000\"},\"headers\":{\"Accept\":\"application/json\",\"Content-Type\":\"text/plain\"},\"body\":\"Test request body\"}");
+		verify(logger).debug(getMarker("REQUEST"), "REQUEST: {\"sender\":\"127.0.0.1\",\"method\":\"POST\",\"path\":\"http://localhost:8080/test\",\"headers\":{\"Accept\":\"application/json\",\"Content-Type\":\"application/x-www-form-urlencoded\"},\"body\":\"field1=1000&field2=2000\"}");
 
 		// not able to capture mocked response status and headers in servlet 2.5
 		verify(logger).debug(getMarker("RESPONSE"), "RESPONSE: {\"status\":0,\"body\":\"Test response body\"}");
@@ -85,7 +80,7 @@ public class LoggingFilterTest {
 		loggingFilter.doFilter(httpServletRequest, httpServletResponse, filterChain);
 
 		verify(logger).isDebugEnabled();
-		verify(logger).debug(getMarker("REQUEST"), "{\"sender\":\"127.0.0.1\",\"method\":\"GET\",\"path\":\"http://localhost:8080/test\",\"params\":{\"param1\":\"1000\"},\"headers\":{\"Accept\":\"application/json\",\"Content-Type\":\"text/plain\"},\"body\":\"Test request body\"}");
+		verify(logger).debug(getMarker("REQUEST"), "{\"sender\":\"127.0.0.1\",\"method\":\"POST\",\"path\":\"http://localhost:8080/test\",\"headers\":{\"Accept\":\"application/json\",\"Content-Type\":\"application/x-www-form-urlencoded\"},\"body\":\"field1=1000&field2=2000\"}");
 
 		// not able to capture mocked response status and headers in servlet 2.5
 		verify(logger).debug(getMarker("RESPONSE"), "{\"status\":0,\"body\":\"Test response body\"}");
@@ -105,7 +100,7 @@ public class LoggingFilterTest {
 		loggingFilter.doFilter(httpServletRequest, httpServletResponse, filterChain);
 
 		verify(logger).isDebugEnabled();
-		verify(logger).debug("{\"sender\":\"127.0.0.1\",\"method\":\"GET\",\"path\":\"http://localhost:8080/test\",\"params\":{\"param1\":\"1000\"},\"headers\":{\"Accept\":\"application/json\",\"Content-Type\":\"text/plain\"},\"body\":\"Test request body\"}");
+		verify(logger).debug("{\"sender\":\"127.0.0.1\",\"method\":\"POST\",\"path\":\"http://localhost:8080/test\",\"headers\":{\"Accept\":\"application/json\",\"Content-Type\":\"application/x-www-form-urlencoded\"},\"body\":\"field1=1000&field2=2000\"}");
 
 		// not able to capture mocked response status and headers in servlet 2.5
 		verify(logger).debug("{\"status\":0,\"body\":\"Test response body\"}");

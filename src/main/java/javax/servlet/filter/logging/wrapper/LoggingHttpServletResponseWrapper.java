@@ -1,7 +1,6 @@
 package javax.servlet.filter.logging.wrapper;
 
 import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 import java.io.ByteArrayOutputStream;
@@ -19,6 +18,10 @@ public class LoggingHttpServletResponseWrapper extends HttpServletResponseWrappe
 
 	private final HttpServletResponse delegate;
 
+	Map<String, String> headers = new HashMap<>();
+
+	int status;
+
 	public LoggingHttpServletResponseWrapper(HttpServletResponse response) {
 		super(response);
 		delegate = response;
@@ -35,10 +38,6 @@ public class LoggingHttpServletResponseWrapper extends HttpServletResponseWrappe
 	}
 
 	public Map<String, String> getHeaders() {
-		Map<String, String> headers = new HashMap<>(0);
-		for (String headerName : getHeaderNames()) {
-			headers.put(headerName, getHeader(headerName));
-		}
 		return headers;
 	}
 
@@ -55,19 +54,57 @@ public class LoggingHttpServletResponseWrapper extends HttpServletResponseWrappe
 		return loggingServletOutpuStream.baos.toByteArray();
 	}
 
+	@Override
+	public void addHeader(String name, String value) {
+		headers.put(name, value);
+		super.addHeader(name, value);
+	}
+
+	@Override
+	public void setHeader(String name, String value) {
+		headers.put(name, value);
+		super.setHeader(name, value);
+	}
+
+	public void setDateHeader(String name, long date) {
+		headers.put(name, Long.toString(date));
+		super.setDateHeader(name, date);
+	}
+
+	public void addDateHeader(String name, long date) {
+		headers.put(name, Long.toString(date));
+		super.addDateHeader(name, date);
+	}
+	
+	public void setIntHeader(String name, int value) {
+		headers.put(name, Integer.toString(value));
+		super.setIntHeader(name, value);
+	}
+
+	public void addIntHeader(String name, int value) {
+		headers.put(name, Integer.toString(value));
+		super.addIntHeader(name, value);
+	}
+
+	@Override
+	public void setStatus(int sc) {
+		this.status = sc;
+		super.setStatus(sc);
+	}
+
+	@Override
+	public void setStatus(int sc, String sm) {
+		this.status = sc;
+		super.setStatus(sc, sm);
+	}
+
+	public int getStatus() {
+		return status;
+	}
+
 	private class LoggingServletOutpuStream extends ServletOutputStream {
 
 		private ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-		@Override
-		public boolean isReady() {
-			return true;
-		}
-
-		@Override
-		public void setWriteListener(WriteListener writeListener) {
-			// not used
-		}
 
 		@Override
 		public void write(int b) {

@@ -20,14 +20,13 @@ import javax.servlet.filter.logging.wrapper.LoggingHttpServletResponseWrapper;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -250,7 +249,7 @@ public class LoggingFilter implements Filter {
 
 		public Builder excludedPaths(String... excludedPaths) {
 			requireNonNull(excludedPaths, "excludedPaths must not be null");
-			this.excludedPaths = Stream.of(excludedPaths).collect(toSet());
+			this.excludedPaths.addAll(Arrays.asList(excludedPaths));
 			return this;
 		}
 
